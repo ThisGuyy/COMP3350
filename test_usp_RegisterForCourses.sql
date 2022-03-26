@@ -3,33 +3,28 @@
 -- Description:	test_usp_RegisterForCourses.sql
 -- Script for testing the stored prcoedure (usp_RegisterForCourses)
 -- =============================================
-DECLARE @OfferingsTable TABLE(OfferingID INT)
-INSERT INTO @OfferingsTable VALUES(1) -- COMP1140
-INSERT INTO @OfferingsTable VALUES(6) -- MATH1220
-INSERT INTO @OfferingsTable VALUES(12) -- SENG1120
-INSERT INTO @OfferingsTable VALUES(11) -- SENG1110
-INSERT INTO @OfferingsTable VALUES(2) -- COMP3350
-INSERT INTO @OfferingsTable VALUES(3) -- COMP3851A
-INSERT INTO @OfferingsTable VALUES(4) -- COMP3851B
-
+SET NOCOUNT ON;
 DECLARE @StudentID INT
-SET @StudentID = 1 -- Student Jesse Leacathelinais
+DECLARE @OfferingsTable CourseOfferingList;
 
---Tests that will work.
-EXEC usp_RegisterForCourses(@StudentID, @OfferingsTable)
-EXEC usp_RegisterForCourses(@StudentID, @OfferingsTable)
-EXEC usp_RegisterForCourses(@StudentID, @OfferingsTable)
+SET @StudentID = 2--  Valid Student Nathan Murphy
 
-DELETE FROM @OfferingsTable
+--DELETE FROM StudentCourseOffering
+
 INSERT INTO @OfferingsTable VALUES(1) -- COMP1140
-INSERT INTO @OfferingsTable VALUES(6) -- MATH1220
-INSERT INTO @OfferingsTable VALUES(12) -- SENG1120
-INSERT INTO @OfferingsTable VALUES(11) -- SENG1110
-INSERT INTO @OfferingsTable VALUES(2) -- COMP3350
+INSERT INTO @OfferingsTable VALUES(1) -- COMP1140
+INSERT INTO @OfferingsTable VALUES(20) -- Not a valid Course
+INSERT INTO @OfferingsTable VALUES(2) -- SENG1110
 INSERT INTO @OfferingsTable VALUES(3) -- COMP3851A
-INSERT INTO @OfferingsTable VALUES(4) -- COMP3851B
 
---Tests that will break.
-EXEC usp_RegisterForCourses(@StudentID, @OfferingsTable)
-EXEC usp_RegisterForCourses(@StudentID, @OfferingsTable)
-EXEC usp_RegisterForCourses(@StudentID, @OfferingsTable)
+SET NOCOUNT OFF;
+
+PRINT('First Exec')
+EXEC usp_RegisterForCourses @StudentID, @OfferingsTable --
+
+SET @StudentID = 200 -- Invalid Student
+
+PRINT(' ')
+PRINT('Second Exec')
+EXEC usp_RegisterForCourses @StudentID, @OfferingsTable
+
