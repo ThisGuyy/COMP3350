@@ -558,6 +558,7 @@ CREATE TABLE TimetableSlot(
 	startTime	TIME	NOT NULL,		--Start time of the timetable slot
 	endTime		TIME	NOT NULL,		--End time of the timetable slot
 	reason		INT		NOT NULL,		--The reason for this timetable slot
+	UNIQUE(slotID, offering),
 	FOREIGN KEY(facility) REFERENCES Facility(facID)
 		ON UPDATE NO ACTION ON DELETE NO ACTION,
 	FOREIGN KEY(offering) REFERENCES PhysicalOffering(offeringID)
@@ -573,79 +574,18 @@ INSERT INTO TimetableSlot VALUES (2, 3, 2, 4, 1, '2022-02-22', '17:00:00', '19:0
 INSERT INTO TimetableSlot VALUES (3, 7, 3, 4, 1, '2022-02-25', '09:00:00', '11:00:00', 1);
 INSERT INTO TimetableSlot VALUES (4, 8, 3, 5, 1, '2022-02-25', '13:00:00', '15:00:00', 3);
 INSERT INTO TimetableSlot VALUES (5, 11, 1, 5, 1, '2022-02-25', '10:00:00', '12:00:00', 2);
-
-INSERT INTO TimetableSlot VALUES (7, 12, 1, 5, 1, '2022-02-23', '8:00:00', '10:00:00', 1);
-
-INSERT INTO TimetableSlot VALUES (9, 1, 4, 6, 1, '2022-02-21', '13:00:00', '15:00:00', 1);
-INSERT INTO TimetableSlot VALUES (10, 5, 4, 6, 1, '2022-02-24', '11:00:00', '12:00:00', 3);
-
-INSERT INTO TimetableSlot VALUES (12, 1, 4, 6, 1, '2022-02-22', '15:00:00', '17:00:00', 3);
-
-INSERT INTO TimetableSlot VALUES (14, 7, 8, 4, 1, '2022-02-24', '11:00:00', '14:00:00', 2);
-
-INSERT INTO TimetableSlot VALUES (16, 10, 10, 6, 1, '2022-02-23', '15:00:00', '17:00:00', 1);
-
-INSERT INTO TimetableSlot VALUES (18, 6, 10, 4, 1, '2022-02-22', '11:00:00', '13:00:00', 3);
-INSERT INTO TimetableSlot VALUES (19, 1, 10, 6, 1, '2022-02-23', '12:00:00', '14:00:00', 2);
-INSERT INTO TimetableSlot VALUES (20, 10, 10, 5, 1, '2022-02-23', '12:00:00', '14:00:00', 2);
+INSERT INTO TimetableSlot VALUES (6, 12, 1, 5, 1, '2022-02-23', '8:00:00', '10:00:00', 1);
+INSERT INTO TimetableSlot VALUES (7, 1, 4, 6, 1, '2022-02-21', '13:00:00', '15:00:00', 1);
+INSERT INTO TimetableSlot VALUES (8, 5, 4, 6, 1, '2022-02-24', '11:00:00', '12:00:00', 3);
+INSERT INTO TimetableSlot VALUES (9, 1, 4, 6, 1, '2022-02-22', '15:00:00', '17:00:00', 3);
+INSERT INTO TimetableSlot VALUES (10, 7, 8, 4, 1, '2022-02-24', '11:00:00', '14:00:00', 2);
+INSERT INTO TimetableSlot VALUES (11, 10, 10, 6, 1, '2022-02-23', '15:00:00', '17:00:00', 1);
+INSERT INTO TimetableSlot VALUES (12, 6, 10, 4, 1, '2022-02-22', '11:00:00', '13:00:00', 3);
+INSERT INTO TimetableSlot VALUES (13, 1, 10, 6, 1, '2022-02-23', '12:00:00', '14:00:00', 2);
+INSERT INTO TimetableSlot VALUES (14, 10, 10, 5, 1, '2022-02-23', '12:00:00', '14:00:00', 2);
 go
 
-
-
-
-SELECT * FROM TimetableSlot
-
-
-DEALLOCATE timetableSlotCursor
-DECLARE timetableSlotCursor CURSOR			--	Cursor for timetableclashcheck trigger
-FOR
-SELECT	slotID, staff, date, startTime, endTime
-FROM	TimetableSlot
-FOR READ ONLY
-go
-
-DECLARE	@slot	INT
-DECLARE	@staff	INT
-DECLARE @date	DATE
-DECLARE @startTime	TIME
-DECLARE @endTime	TIME
-
-DECLARE	@count	INT
-SET		@count = 0
-
-OPEN timetableSlotCursor
-FETCH NEXT FROM timetableSlotCursor INTO @slot, @slot, @date, @startTime, @endTime
-
-WHILE @@FETCH_STATUS = 0
-BEGIN
-
-	SELECT ts.*, per.name
-	FROM	TimetableSlot ts,				--The timetable slot data that is to be inserted
-			PhysicalOffering po,
-			CourseOffering c,
-			StudentCourseOffering sc,
-			Period pe,
-			Person per
-	WHERE	ts.offering = po.offeringID		--	Check offering's all connected
-		AND	po.offeringID = c.offeringID
-		AND	sc.offering = c.offeringID
-		AND c.period = pe.periodID
-		AND ts.date = @date
-		AND ts.slotID != @slot
-		AND ts.staff = per.personID
-		AND ts.staff = @staff
-		AND (			-- Timetable clash check section
-				(ts.startTime >= @startTime AND ts.startTime < @endTime)
-			OR	(ts.endTime > @startTime AND ts.endTime <= @endTime)
-			)
-
-	FETCH NEXT FROM timetableSlotCursor INTO @slot, @staff, @date, @startTime, @endTime
-END
-
-CLOSE timetableSlotCursor
-
-
-	---		Student Course Offering x Timetabele slot data		---
+	---		Student Course Offering x Timetable slot data		---
 
 CREATE TABLE StudentTimetableSlot(
 	student		INT		NOT NULL,		--ID of the student
@@ -654,24 +594,30 @@ CREATE TABLE StudentTimetableSlot(
 	PRIMARY KEY(student, slot, offering),
 	FOREIGN KEY(student, offering) REFERENCES StudentCourseOffering(student, offering)
 		ON UPDATE NO ACTION ON DELETE NO ACTION,
-	FOREIGN KEY(slot) REFERENCES TimetableSlot(slotID)
+	FOREIGN KEY(slot, offering) REFERENCES TimetableSlot(slotID, offering)
 		ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 
 INSERT INTO StudentTimetableSlot VALUES (1, 2, 1);
+INSERT INTO StudentTimetableSlot VALUES (1, 2, 2);
+INSERT INTO StudentTimetableSlot VALUES (1, 3, 3);
+INSERT INTO StudentTimetableSlot VALUES (1, 3, 4);
+INSERT INTO StudentTimetableSlot VALUES (1, 8, 10);
+INSERT INTO StudentTimetableSlot VALUES (1, 10, 11);
+INSERT INTO StudentTimetableSlot VALUES (1, 10, 12);
+INSERT INTO StudentTimetableSlot VALUES (1, 10, 13);
 INSERT INTO StudentTimetableSlot VALUES (2, 2, 1);
-
-
+INSERT INTO StudentTimetableSlot VALUES (2, 2, 2);
+INSERT INTO StudentTimetableSlot VALUES (2, 3, 3);
+INSERT INTO StudentTimetableSlot VALUES (2, 3, 4);
+INSERT INTO StudentTimetableSlot VALUES (5, 1, 5);
+INSERT INTO StudentTimetableSlot VALUES (5, 1, 6);
+INSERT INTO StudentTimetableSlot VALUES (6, 3, 3);
+INSERT INTO StudentTimetableSlot VALUES (6, 3, 4);
+INSERT INTO StudentTimetableSlot VALUES (6, 4, 7);
 go
 
-
-SELECT * FROM TimetableSlot
-SELECT * FROM StudentTimetableSlot
-
 	---		Student Enrolment Data		---
-
----	MIGHT NOT NEED PERIOD WE'LL SEEEE	---
----	COME BACK LATER TO PROPERLY FILL IN	---
 
 CREATE TABLE StudentEnrolment(
 	enrolID				INT				PRIMARY KEY,	--ID of the student enrolment
@@ -693,8 +639,6 @@ INSERT INTO StudentEnrolment VALUES (3, 3, 1, 5, '2011-01-15', '2021-12-31', 'Co
 go
 
 	---		Program Enrolment Data		---
-
----	COME BACK LATER TO PROPERLY FILL IN	---
 
 CREATE TABLE ProgramEnrolment(
 	enrolID	INT	NOT NULL,	--ID of the student enrolment
