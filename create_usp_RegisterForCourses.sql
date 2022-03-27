@@ -11,13 +11,13 @@
 -- =============================================
 DROP PROCEDURE IF EXISTS usp_RegisterForCourses
 DROP TYPE IF EXISTS CourseOfferingList
-GO
+go
 
 CREATE TYPE CourseOfferingList AS TABLE -- Table type for the list of offerings.
 (
 	courseID INT -- Course ID passed into the procedure.
 )
-GO
+go
 
 --Sample Data
 -- @studentNumber ID 2 = Nathan Murphy
@@ -29,14 +29,17 @@ CREATE PROCEDURE usp_RegisterForCourses
 AS
 BEGIN
 	DECLARE @CurrOfferingID VARCHAR(10)
-	DECLARE @studentVar INT
-	DECLARE @checkerVar INT
 	
 	--Checking weather the Student is valid within the Pearson Table.
 	-- Check if the count is less then 1 as 0 will be the result ending in error.
 	IF (SELECT COUNT(personID) FROM Person WHERE personID = @studentNumber) < 1
 		BEGIN
 			RAISERROR('Invalid Student Number. Cannot proceed with enrollment.',11,1)
+			RETURN -- Exit out of the procedure to provident incorrect data being passed forward.
+		END
+	ELSE IF (SELECT COUNT(personID) FROM Person WHERE personID = @studentNumber AND isStudent = 1) < 1
+		BEGIN
+			RAISERROR('Staff member not a student. Cannot proceed with enrollment.',11,1)
 			RETURN -- Exit out of the procedure to provident incorrect data being passed forward.
 		END
 	ELSE
@@ -54,12 +57,59 @@ BEGIN
 			
 			BEGIN
 				BEGIN TRY
+
+					--Used to record the total amount of prerequisite courses for the selected offering
+					DECLARE @temp INT
+
+					SELECT @temp = COUNT(*)
+					FROM AssumedKnowledge a, CourseOffering co
+					WHERE	a.course = co.course
+						AND co.offeringID = @CurrOfferingID
+
+
 					-- Check if the current course offering is a valid course.
-					IF (SELECT COUNT(offeringID)FROM CourseOffering WHERE @CurrOfferingID = offeringID) < 1 
+					IF (
+						SELECT COUNT(offeringID)
+						FROM CourseOffering 
+						WHERE @CurrOfferingID = offeringID
+					) < 1 
 						RAISERROR('Invalid Course ID, This Course does not exist as a offered course.',11,1)
+					
 					-- Check if student is already enrolled in a course.
-					ELSE IF (SELECT COUNT(offering) FROM StudentCourseOffering WHERE offering = @CurrOfferingID AND student = @studentNumber) > 0
+					ELSE IF (
+						SELECT COUNT(offering) 
+						FROM StudentCourseOffering 
+						WHERE	offering = @CurrOfferingID 
+							AND student = @studentNumber
+					) > 0
 						RAISERROR('Student is already enrolled in this course.',16,1)
+					
+					-- Check if student already completed the course
+					ELSE IF (
+						SELECT COUNT(offering) 
+						FROM StudentCourseOffering 
+						WHERE	offering = @CurrOfferingID 
+							AND student = @studentNumber 
+							AND isCompleted = 0
+					) > 0
+						RAISERROR('Student has already completed this course.',16,1)
+				
+					--Check if all prerequisite courses have been completed
+					ELSE IF (
+						SELECT COUNT(*)
+						FROM StudentCourseOffering sc, CourseOffering co
+						WHERE	sc.offering = co.offeringID
+							AND sc.student = @studentNumber
+							AND (sc.finalGrade != 'F' OR (isCompleted = 1 AND sc.finalGrade = NULL))
+							AND co.course IN (
+								SELECT a.assumedCourse
+								FROM AssumedKnowledge a, CourseOffering co
+								WHERE	a.course = co.course
+									AND co.offeringID = @CurrOfferingID
+							)
+						) < @temp
+						RAISERROR('Student has not completed all prerequisite courses for this course.',16,1)
+
 					ELSE
 					-- Insert enrolment record for student in an offering, allocated to today's date.
 						INSERT INTO StudentCourseOffering(student, isStudent, offering, dateRegistered, finalMark, finalGrade, isCompleted) 
@@ -84,29 +134,4 @@ BEGIN
 			END
 		END
 END
-GO
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+go

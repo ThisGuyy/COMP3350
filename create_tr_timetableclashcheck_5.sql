@@ -43,7 +43,6 @@ BEGIN
 	WHILE @@FETCH_STATUS = 0
 	BEGIN
 		
-		PRINT('Hello')
 		--	Check for new tuples (Inserted table) and their managers
 		SELECT @currCount = COUNT(*)
 		FROM	Inserted i,				--The timetable slot data that is to be inserted
@@ -119,7 +118,6 @@ BEGIN
 	WHILE @@FETCH_STATUS = 0
 	BEGIN
 
-		PRINT('Hello')
 		--	Check for new tuples (Inserted table) and their managers
 		SELECT @currCount = COUNT(*)
 		FROM	Inserted i,				--The timetable slot data that is to be inserted

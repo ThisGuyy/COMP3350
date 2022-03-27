@@ -281,8 +281,8 @@ go
 CREATE TABLE ProgramStaff(
 	program		INT,				--Code of the program
 	convenor	INT,				--Course that is featured in the program
-	startDate	DATE	NOT NULL,	--StartDate 
-	endDate		DATE,
+	startDate	DATE	NOT NULL,	--Start date the staff member was convenor for the program
+	endDate		DATE,				--End date the staff member was convenor for the program
 	PRIMARY KEY(program, convenor, startDate),
 	CHECK(endDate > startDate),
 	FOREIGN KEY(program) REFERENCES Program(progCode)
@@ -302,8 +302,8 @@ go
 	---		Program Major Minor Data		---
 
 CREATE TABLE ProgramMajorMinor(
-	program		INT,				--Code of the program
-	majorMinor	VARCHAR(8),				--Code of the major that associates with the program
+	program		INT,			--Code of the program
+	majorMinor	VARCHAR(8),		--Code of the major that associates with the program
 	PRIMARY KEY(program, majorMinor),
 	FOREIGN KEY(program) REFERENCES Program(progCode)
 		ON UPDATE NO ACTION ON DELETE NO ACTION,
@@ -323,10 +323,10 @@ go
 CREATE TABLE AssignmentMajor(
 	assignID	INT			PRIMARY KEY,	--Code of the program
 	majorMinor	VARCHAR(8)	NOT NULL,		--Code of the major that associates with the program
-	course		VARCHAR(9)	NOT NULL,
-	type		INT			NOT NULL,
-	startDate	DATE		NOT NULL,
-	endDate		DATE,
+	course		VARCHAR(9)	NOT NULL,		--course that is assigned to this major
+	type		INT			NOT NULL,		--type of assignment (eg Directed)
+	startDate	DATE		NOT NULL,		--start date the course was assigned to this major
+	endDate		DATE,						--end date the course was assigned to this major
 	FOREIGN KEY(majorMinor) REFERENCES MajorMinor(mCode)
 		ON UPDATE NO ACTION ON DELETE NO ACTION,
 	FOREIGN KEY(course) REFERENCES Course(courseID)
@@ -489,10 +489,12 @@ CREATE TABLE StudentCourseOffering(
 	student			INT			NOT NULL,		--ID of the student
 	isStudent		BIT	CHECK(isStudent = 1),	--Flag that determines that this person is a student
 	offering		INT			NOT NULL,		--Course that is being offered
-	dateRegistered	DATE		NOT NULL,		--Coordinator of the course offering
-	finalMark		INT,						--Flag that indicates that the coordinator is a staff member
-	finalGrade		VARCHAR(2),					--Campus that the course offering is being held
-	isCompleted		BIT			NOT NULL,		--Period that the course offering is being held
+	dateRegistered	DATE		NOT NULL,		--Date the student registered for the course
+	finalMark		INT,						--Final mark of the course
+	finalGrade		VARCHAR(2),					--Final grade of the course
+	isCompleted		BIT			NOT NULL,		--Flag that indicates that the course has been completed
+	CHECK(finalGrade = NULL OR
+		(finalGrade != NULL AND isCompleted = 1)),
 	PRIMARY KEY(student, offering),
 	FOREIGN KEY(student, isStudent) REFERENCES Person(personID, isStudent)
 		ON UPDATE NO ACTION ON DELETE NO ACTION,
@@ -500,14 +502,19 @@ CREATE TABLE StudentCourseOffering(
 		ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 
+INSERT INTO StudentCourseOffering VALUES (1, 1, 1, '2020-01-05', 87, 'HD', 1);
 INSERT INTO StudentCourseOffering VALUES (1, 1, 3, '2022-01-05', NULL, NULL, 0);
 INSERT INTO StudentCourseOffering VALUES (1, 1, 2, '2022-01-05', NULL, NULL, 0);
+INSERT INTO StudentCourseOffering VALUES (1, 1, 6, '2018-01-05', 77, 'D', 1);
 INSERT INTO StudentCourseOffering VALUES (1, 1, 7, '2020-07-05', 100, 'HD', 1);
 INSERT INTO StudentCourseOffering VALUES (1, 1, 8, '2020-01-05', 98, 'HD', 1);
 INSERT INTO StudentCourseOffering VALUES (1, 1, 9, '2021-01-05', 81, 'D', 1);
 INSERT INTO StudentCourseOffering VALUES (1, 1, 10, '2021-01-05', 96, 'HD', 1);
+INSERT INTO StudentCourseOffering VALUES (1, 1, 11, '2019-01-05', 93, 'HD', 1);
+INSERT INTO StudentCourseOffering VALUES (2, 1, 1, '2020-01-05', 100, 'HD', 1);
 INSERT INTO StudentCourseOffering VALUES (2, 1, 2, '2022-01-05', NULL, NULL, 0);
 INSERT INTO StudentCourseOffering VALUES (2, 1, 3, '2022-01-05', NULL, NULL, 0);
+INSERT INTO StudentCourseOffering VALUES (2, 1, 11, '2021-01-05', 67, 'C', 1);
 INSERT INTO StudentCourseOffering VALUES (3, 1, 7, '2021-01-05', 90, 'HD', 1);
 INSERT INTO StudentCourseOffering VALUES (3, 1, 11, '2020-01-05', 87, 'HD', 1);
 INSERT INTO StudentCourseOffering VALUES (3, 1, 12, '2021-07-05', 69, 'C', 1);
@@ -516,6 +523,15 @@ INSERT INTO StudentCourseOffering VALUES (5, 1, 1, '2021-07-05', 60, 'P', 1);
 INSERT INTO StudentCourseOffering VALUES (6, 1, 3, '2020-01-05', 48, 'F', 1);
 INSERT INTO StudentCourseOffering VALUES (6, 1, 4, '2021-07-05', 60, 'P', 1);
 go
+
+SELECT sc.*, a.*
+FROM StudentCourseOffering sc, CourseOffering co, Course c, AssumedKnowledge a
+WHERE	sc.offering = co.offeringID
+	AND co.course = c.courseID
+	AND c.courseID = a.course
+	AND a.isPrerequisite = 1
+
+SELECT course FROM CourseOffering
 
 	---		Physical Offering Data		---
 
@@ -590,7 +606,7 @@ go
 CREATE TABLE StudentTimetableSlot(
 	student		INT		NOT NULL,		--ID of the student
 	offering	INT		NOT NULL,		--The offering that this slot is apart of
-	slot		INT		NOT NULL,	--indicates this student is a student
+	slot		INT		NOT NULL,		--Timetable slot that is being held
 	PRIMARY KEY(student, slot, offering),
 	FOREIGN KEY(student, offering) REFERENCES StudentCourseOffering(student, offering)
 		ON UPDATE NO ACTION ON DELETE NO ACTION,
@@ -642,7 +658,7 @@ go
 
 CREATE TABLE ProgramEnrolment(
 	enrolID	INT	NOT NULL,	--ID of the student enrolment
-	program	INT	NOT NULL,
+	program	INT	NOT NULL,	--program that is being enrolled in
 	PRIMARY KEY(enrolID, program),
 	FOREIGN KEY(enrolID) REFERENCES StudentEnrolment(enrolID)
 		ON UPDATE NO ACTION ON DELETE NO ACTION,
