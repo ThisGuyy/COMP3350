@@ -43,7 +43,7 @@ BEGIN
 	WHILE @@FETCH_STATUS = 0
 	BEGIN
 		
-		--	Check for new tuples (Inserted table) and their managers
+		--	Find any overlapping time slots
 		SELECT @currCount = COUNT(*)
 		FROM	Inserted i,				--The timetable slot data that is to be inserted
 				TimetableSlot ts,
@@ -118,7 +118,7 @@ BEGIN
 	WHILE @@FETCH_STATUS = 0
 	BEGIN
 
-		--	Check for new tuples (Inserted table) and their managers
+		--	Find any overlapping time slots
 		SELECT @currCount = COUNT(*)
 		FROM	Inserted i,				--The timetable slot data that is to be inserted
 				PhysicalOffering po,

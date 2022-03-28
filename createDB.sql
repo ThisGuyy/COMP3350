@@ -243,7 +243,7 @@ CREATE TABLE AcademicStaff(
 	staff	INT	PRIMARY KEY,			--ID of the staff member
 	isStaff	BIT	CHECK(isStaff = 1),		--Flag to make sure that the staff member is a staff member
 	FOREIGN KEY(staff, isStaff) REFERENCES Person(personID, isStaff)
-		ON UPDATE Cascade ON DELETE NO ACTION
+		ON UPDATE CASCADE ON DELETE NO ACTION
 );
 
 INSERT INTO AcademicStaff VALUES (4, 1);
@@ -262,9 +262,9 @@ CREATE TABLE OrganisationStaff(
 	PRIMARY KEY(oUnit, staff, startDate),
 	CHECK(endDate > startDate),
 	FOREIGN KEY(oUnit) REFERENCES OrganisationUnit(unitCode)
-		ON UPDATE Cascade ON DELETE NO ACTION,
+		ON UPDATE CASCADE ON DELETE NO ACTION,
 	FOREIGN KEY(staff, isStaff) REFERENCES Person(personID, isStaff)
-		ON UPDATE Cascade ON DELETE NO ACTION
+		ON UPDATE CASCADE ON DELETE NO ACTION
 );
 
 INSERT INTO OrganisationStaff VALUES ('OU000001', 4, 1, '2022-02-01', NULL, 'Lecturer');
@@ -492,9 +492,7 @@ CREATE TABLE StudentCourseOffering(
 	dateRegistered	DATE		NOT NULL,		--Date the student registered for the course
 	finalMark		INT,						--Final mark of the course
 	finalGrade		VARCHAR(2),					--Final grade of the course
-	isCompleted		BIT			NOT NULL,		--Flag that indicates that the course has been completed
-	CHECK(finalGrade = NULL OR
-		(finalGrade != NULL AND isCompleted = 1)),
+	isCompleted		BIT			NOT NULL,		--Flag that indicates that the course has been successfully completed (no fail)
 	PRIMARY KEY(student, offering),
 	FOREIGN KEY(student, isStudent) REFERENCES Person(personID, isStudent)
 		ON UPDATE NO ACTION ON DELETE NO ACTION,
@@ -512,7 +510,6 @@ INSERT INTO StudentCourseOffering VALUES (1, 1, 9, '2021-01-05', 81, 'D', 1);
 INSERT INTO StudentCourseOffering VALUES (1, 1, 10, '2021-01-05', 96, 'HD', 1);
 INSERT INTO StudentCourseOffering VALUES (1, 1, 11, '2019-01-05', 93, 'HD', 1);
 INSERT INTO StudentCourseOffering VALUES (2, 1, 1, '2020-01-05', 100, 'HD', 1);
-INSERT INTO StudentCourseOffering VALUES (2, 1, 2, '2022-01-05', NULL, NULL, 0);
 INSERT INTO StudentCourseOffering VALUES (2, 1, 3, '2022-01-05', NULL, NULL, 0);
 INSERT INTO StudentCourseOffering VALUES (2, 1, 11, '2021-01-05', 67, 'C', 1);
 INSERT INTO StudentCourseOffering VALUES (3, 1, 7, '2021-01-05', 90, 'HD', 1);
@@ -520,18 +517,9 @@ INSERT INTO StudentCourseOffering VALUES (3, 1, 11, '2020-01-05', 87, 'HD', 1);
 INSERT INTO StudentCourseOffering VALUES (3, 1, 12, '2021-07-05', 69, 'C', 1);
 INSERT INTO StudentCourseOffering VALUES (5, 1, 5, '2021-07-05', 60, 'P', 1);
 INSERT INTO StudentCourseOffering VALUES (5, 1, 1, '2021-07-05', 60, 'P', 1);
-INSERT INTO StudentCourseOffering VALUES (6, 1, 3, '2020-01-05', 48, 'F', 1);
+INSERT INTO StudentCourseOffering VALUES (6, 1, 3, '2020-01-05', 48, 'F', 0);
 INSERT INTO StudentCourseOffering VALUES (6, 1, 4, '2021-07-05', 60, 'P', 1);
 go
-
-SELECT sc.*, a.*
-FROM StudentCourseOffering sc, CourseOffering co, Course c, AssumedKnowledge a
-WHERE	sc.offering = co.offeringID
-	AND co.course = c.courseID
-	AND c.courseID = a.course
-	AND a.isPrerequisite = 1
-
-SELECT course FROM CourseOffering
 
 	---		Physical Offering Data		---
 
@@ -622,8 +610,6 @@ INSERT INTO StudentTimetableSlot VALUES (1, 8, 10);
 INSERT INTO StudentTimetableSlot VALUES (1, 10, 11);
 INSERT INTO StudentTimetableSlot VALUES (1, 10, 12);
 INSERT INTO StudentTimetableSlot VALUES (1, 10, 13);
-INSERT INTO StudentTimetableSlot VALUES (2, 2, 1);
-INSERT INTO StudentTimetableSlot VALUES (2, 2, 2);
 INSERT INTO StudentTimetableSlot VALUES (2, 3, 3);
 INSERT INTO StudentTimetableSlot VALUES (2, 3, 4);
 INSERT INTO StudentTimetableSlot VALUES (5, 1, 5);
@@ -641,7 +627,7 @@ CREATE TABLE StudentEnrolment(
 	isStudent			BIT	CHECK(isStudent = 1),		--Flag that makes sure that this person is a student
 	period				INT				NOT NULL,		--The period this student is offering in
 	dateEnrolled		DATE			NOT NULL,		--The date the student is enrolling
-	dateCompletetion	DATE,							--The date the student completed their enrolment
+	dateCompletion	DATE,							--The date the student completed their enrolment
 	status				VARCHAR(100)	NOT NULL,		--Status of the student enrolment
 	FOREIGN KEY(student, isStudent) REFERENCES Person(personID, isStudent)
 		ON UPDATE NO ACTION ON DELETE NO ACTION,
