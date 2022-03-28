@@ -8,9 +8,9 @@ SET NOCOUNT ON;
 DECLARE @StudentID INT
 DECLARE @OfferingsTable CourseOfferingList;
 
-SET @StudentID = 5 --  Valid Student Mitch Black
+SET @StudentID = 2 --  Valid Student 
 
-INSERT INTO @OfferingsTable VALUES(2) -- COMP3350
+INSERT INTO @OfferingsTable VALUES(2) -- COMP3350 (Will enter for student 2)
 INSERT INTO @OfferingsTable VALUES(1) -- COMP1140
 INSERT INTO @OfferingsTable VALUES(1) -- COMP1140
 INSERT INTO @OfferingsTable VALUES(20) -- Not a valid Course

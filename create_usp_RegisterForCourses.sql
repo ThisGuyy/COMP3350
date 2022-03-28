@@ -75,6 +75,16 @@ BEGIN
 					) < 1 
 						RAISERROR('Invalid Course ID, This Course does not exist as a offered course.',11,1)
 					
+					-- Check if student already completed the course
+					ELSE IF (
+						SELECT COUNT(offering) 
+						FROM StudentCourseOffering 
+						WHERE	offering = @CurrOfferingID 
+							AND student = @studentNumber 
+							AND isCompleted = 1
+					) > 0
+						RAISERROR('Student has already completed this course.',16,1)
+
 					-- Check if student is already enrolled in a course.
 					ELSE IF (
 						SELECT COUNT(offering) 
@@ -84,15 +94,7 @@ BEGIN
 					) > 0
 						RAISERROR('Student is already enrolled in this course.',16,1)
 					
-					-- Check if student already completed the course
-					ELSE IF (
-						SELECT COUNT(offering) 
-						FROM StudentCourseOffering 
-						WHERE	offering = @CurrOfferingID 
-							AND student = @studentNumber 
-							AND isCompleted = 0
-					) > 0
-						RAISERROR('Student has already completed this course.',16,1)
+					
 				
 					--Check if all prerequisite courses have been completed
 					ELSE IF (
@@ -100,7 +102,7 @@ BEGIN
 						FROM StudentCourseOffering sc, CourseOffering co
 						WHERE	sc.offering = co.offeringID
 							AND sc.student = @studentNumber
-							AND (sc.finalGrade != 'F' OR (isCompleted = 1 AND sc.finalGrade = NULL))
+							AND sc.isCompleted = 1
 							AND co.course IN (
 								SELECT a.assumedCourse
 								FROM AssumedKnowledge a, CourseOffering co
